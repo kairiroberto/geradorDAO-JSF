@@ -21,7 +21,7 @@ public class ConnectionFactory {
         String caminho = "jdbc:mysql";
         String host = "localhost";
         String porta = "3306";
-        String bd = "bd_teste";
+        String bd = "estoque_java";
 
         String login = "root";
         //String login = "kairiroberto1";
@@ -29,7 +29,7 @@ public class ConnectionFactory {
         String senha = "";
         //String senha = "C0l0@@u@";
 
-        String url = "jdbc:mysql://localhost:3306/bd_teste";
+        String url = "jdbc:mysql://localhost:3306/estoque_java";
         //String url = "jdbc:mysql://estoque-java.mysql.uhserver.com/estoque_java";
         //String url = caminho + "://" + host + ":" + porta + "/" + bd;
 

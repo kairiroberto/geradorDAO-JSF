@@ -6,14 +6,15 @@
 package geradorcodigo;
 
 import java.util.List;
-import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,14 +28,20 @@ public class GeradorCodigo {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        Pessoa[] pessoa = new Pessoa[1];
-        pessoa[0] = new Pessoa();
 
-        for (Pessoa p : pessoa) {
-            gerarCodigo(p);
-        }
+        listTables();
+        //Marca marca = new Marca();
+        //gerarCodigo(marca);
         /*
-        try {
+            Pessoa[] pessoa = new Pessoa[1];
+            pessoa[0] = new Pessoa();
+            
+            for (Pessoa p : pessoa) {
+            gerarCodigo(p);
+            }
+         */
+ /*
+            try {
             // TODO code application logic here
             Pessoa p = new Pessoa();
             p.setId(1);
@@ -46,13 +53,14 @@ public class GeradorCodigo {
             p.setNome("JROBERTO");
             dao.insert(p);
             for (Pessoa p1 : dao.select()) {
-                System.out.println(p1.getNome());
+            System.out.println(p1.getNome());
             }
             System.out.println(dao.selectOne(1));
-        } catch (SQLException ex) {
+            } catch (SQLException ex) {
             Logger.getLogger(GeradorCodigo.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        */
+            }
+         */
+
     }
 
     static List<String> att = new ArrayList<>();
@@ -207,7 +215,7 @@ public class GeradorCodigo {
 
         System.out.println();
     }
-    
+
     public static void gerarJSF(String tabela) {
         //<h:outputLabel for="nome" value="NOME "/>
         //<h:inputText id="nome" value="#{clienteBean.obj.nome}"/>
@@ -215,6 +223,59 @@ public class GeradorCodigo {
             System.out.println("<h:outputLabel for=\"" + s + " \" value=\"" + s.toUpperCase() + " \"/>");
             System.out.println("<h:inputText id=\"" + s + "\" value=\"#{clienteBean.obj." + s + "}\"/>");
             System.out.println();
+        }
+    }
+
+    public static void listTables() {
+        String login = "root";
+        //String login = "kairiroberto1";
+        String senha = "";
+        String url = "jdbc:mysql://localhost:3306/bd_farmacia";
+        try {
+            System.out.println("Conectando ao banco.");
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection con = DriverManager.getConnection(url, login, senha);
+            System.out.println("Conexão estabelecida.");
+            DatabaseMetaData meta = (DatabaseMetaData) con.getMetaData();
+            ResultSet rs = null;
+            
+            rs = meta.getTables(null, null, null, new String[]{
+                "TABLE"
+            });
+            int count = 0;
+            System.out.println("All table names are in test database:");
+            while (rs.next()) {
+                String tblName = rs.getString("TABLE_NAME");
+                System.out.println(tblName);
+                ResultSet columns = meta.getColumns(null, null, tblName, null);
+                while (columns.next()) {
+                    System.out.print(columns.getString("COLUMN_NAME"));
+                    System.out.print(" : ");
+                    System.out.println(columns.getString("TYPE_NAME"));
+                }
+                columns.close();
+                ResultSet primaryKeys = meta.getPrimaryKeys(null, null, tblName);
+                while (primaryKeys.next()) {
+                    System.out.println("PK: " + primaryKeys.getString("COLUMN_NAME"));
+                }
+                primaryKeys.close();
+                ResultSet indexInfo = meta.getIndexInfo(null, null, tblName, false, false);
+                while (indexInfo.next()) {
+                    System.out.println("INDEX: " + indexInfo.getString("COLUMN_NAME"));
+                }
+                ResultSet foreignKeys = meta.getImportedKeys(null, null, tblName);
+                while (foreignKeys.next()) {
+                    System.out.println("FK: " + foreignKeys.getString("PKTABLE_NAME") + "-" + foreignKeys.getString("PKCOLUMN_NAME") + "\nFK: " + foreignKeys.getString("FKTABLE_NAME") + "-" + foreignKeys.getString("FKCOLUMN_NAME"));
+                }
+                System.out.println();
+                count++;
+            }
+            System.out.println(count + " Rows in set ");
+            con.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(GeradorCodigo.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(GeradorCodigo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
