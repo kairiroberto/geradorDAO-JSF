@@ -5,6 +5,7 @@
  */
 package geradorcodigo;
 
+import com.sun.javafx.scene.control.skin.VirtualFlow;
 import java.util.List;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -63,8 +64,8 @@ public class GeradorCodigo {
 
     }
 
-    static List<String> att = new ArrayList<>();
-    static HashMap<String, Object> map = new HashMap<String, Object>();
+    private static List<String> att = new ArrayList<>();
+    private static HashMap<String, Object> map = new HashMap<String, Object>();
 
     private static void gerarCodigo(Object object) {
         Class classe = object.getClass();
@@ -225,7 +226,7 @@ public class GeradorCodigo {
             System.out.println();
         }
     }
-
+    
     public static void listTables() {
         String login = "root";
         //String login = "kairiroberto1";
@@ -242,35 +243,30 @@ public class GeradorCodigo {
             rs = meta.getTables(null, null, null, new String[]{
                 "TABLE"
             });
+            
             int count = 0;
+            
             System.out.println("All table names are in test database:");
+            HashMap<String, List<HashMap<String, String>>> tabelas = new HashMap<>();
             while (rs.next()) {
                 String tblName = rs.getString("TABLE_NAME");
-                System.out.println(tblName);
+                //System.out.println("<<<<< " + tblName + " >>>>>");
                 ResultSet columns = meta.getColumns(null, null, tblName, null);
+                List<HashMap<String, String>> tabela = new ArrayList<>();
                 while (columns.next()) {
-                    System.out.print(columns.getString("COLUMN_NAME"));
-                    System.out.print(" : ");
-                    System.out.println(columns.getString("TYPE_NAME"));
+                    String nome = columns.getString("COLUMN_NAME");
+                    String tipo = columns.getString("TYPE_NAME");
+                    //System.out.println(nome + " : " + tipo);
+                    HashMap<String, String> atributos = new HashMap<>();
+                    atributos.put(tipo, nome);
+                    tabela.add(atributos);
                 }
-                columns.close();
-                ResultSet primaryKeys = meta.getPrimaryKeys(null, null, tblName);
-                while (primaryKeys.next()) {
-                    System.out.println("PK: " + primaryKeys.getString("COLUMN_NAME"));
-                }
-                primaryKeys.close();
-                ResultSet indexInfo = meta.getIndexInfo(null, null, tblName, false, false);
-                while (indexInfo.next()) {
-                    System.out.println("INDEX: " + indexInfo.getString("COLUMN_NAME"));
-                }
-                ResultSet foreignKeys = meta.getImportedKeys(null, null, tblName);
-                while (foreignKeys.next()) {
-                    System.out.println("FK: " + foreignKeys.getString("PKTABLE_NAME") + "-" + foreignKeys.getString("PKCOLUMN_NAME") + "\nFK: " + foreignKeys.getString("FKTABLE_NAME") + "-" + foreignKeys.getString("FKCOLUMN_NAME"));
-                }
+                tabelas.put(tblName, tabela);
                 System.out.println();
                 count++;
             }
             System.out.println(count + " Rows in set ");
+            gerarModelClasse(tabelas);
             con.close();
         } catch (SQLException ex) {
             Logger.getLogger(GeradorCodigo.class.getName()).log(Level.SEVERE, null, ex);
@@ -278,5 +274,59 @@ public class GeradorCodigo {
             Logger.getLogger(GeradorCodigo.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
+    public static void gerarModelClasse(HashMap<String, List<HashMap<String, String>>> tabelas) {
+        for (String key1 : tabelas.keySet()) {
+                System.out.println();
+                System.out.println("public class " + key1.substring(0,1).toUpperCase().concat(key1.substring(1)) + " {");
+                List<HashMap<String, String>> lista = tabelas.get(key1);
+                for (int i = 0; i < lista.size(); i++) {
+                    for (String s : lista.get(i).keySet()) {
+                        System.out.println("\tprivate " + converteVariaveis(s) + " " + lista.get(i).get(s) + ";");
+                    }
+                }
+                for (int i = 0; i < lista.size(); i++) {
+                    for (String s : lista.get(i).keySet()) {
+                        System.out.println();
+                        System.out.println("\tpublic " + converteVariaveis(s) + 
+                                " get" + lista.get(i).get(s).substring(0,1).toUpperCase().concat(lista.get(i).get(s).substring(1)) + " () {");
+                        System.out.println("\t\treturn " + lista.get(i).get(s) + ";");
+                        System.out.println("\t}");
+                    }
+                }
+                System.out.println("}");
+            }
+    }
+    
+    private static String converteVariaveis(String s) {
+        if (s.equals("INT")) {
+            return "int";
+        } else if (s.equals("VARCHAR") || s.equals("TEXT")) {
+            return "String";
+        } else if (s.equals("DOUBLE")) {
+            return "Double";
+        } else if (s.equals("DATE")) {
+            return "Date";
+        }
+        return s;
+    }
+    
+    /*
+        ResultSet primaryKeys = meta.getPrimaryKeys(null, null, tblName);
+        while (primaryKeys.next()) {
+            //System.out.println("PK: " + primaryKeys.getString("COLUMN_NAME"));
+        }
+        primaryKeys.close();
+        ResultSet indexInfo = meta.getIndexInfo(null, null, tblName, false, false);
+        while (indexInfo.next()) {
+            //System.out.println("INDEX: " + indexInfo.getString("COLUMN_NAME"));
+        }
+        indexInfo.close();
+        ResultSet foreignKeys = meta.getImportedKeys(null, null, tblName);
+        while (foreignKeys.next()) {
+            //System.out.println("FK: " + foreignKeys.getString("PKTABLE_NAME") + "-" + foreignKeys.getString("PKCOLUMN_NAME") + "\nFK: " + foreignKeys.getString("FKTABLE_NAME") + "-" + foreignKeys.getString("FKCOLUMN_NAME"));
+        }
+        foreignKeys.close();
+    */
 
 }
