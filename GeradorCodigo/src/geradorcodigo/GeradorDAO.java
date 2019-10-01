@@ -5,9 +5,12 @@
  */
 package geradorcodigo;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -17,12 +20,57 @@ public class GeradorDAO {
 
     private List<String> atribudos = new ArrayList<>();
     private HashMap<String, Object> mapa = new HashMap<String, Object>();
+    public static List<String> att = new ArrayList<>();
+    public static HashMap<String, Object> map = new HashMap<String, Object>();
+    
+
+    
+    public GeradorDAO() {
+        
+    }
+    
+    public static void gerarCamposClasse(Object object) {
+        att.clear();
+        map.clear();
+        Class classe = object.getClass();
+        Field fields[] = classe.getDeclaredFields();
+        String nomeAtributo = "";
+        //Object valorAtributo = null;
+        Object tipoAtributo = null;
+        //System.out.println(fields.length);
+        for (Field field : fields) {
+            try {
+                field.setAccessible(true); //Necessário por conta do encapsulamento (private)
+                nomeAtributo = field.getName();
+                //System.out.println(nomeAtributo);
+                att.add(nomeAtributo);
+                //valorAtributo = field.get(object);
+                tipoAtributo = field.getType(); //Obtendo o tipo do atributo
+                String tipo = String.valueOf(tipoAtributo);
+                tipo = tipo.substring(tipo.lastIndexOf(".") + 1);
+                if (tipo.equals("int")) {
+                    tipo = "Int";
+                }
+                //System.out.println(tipo);
+                map.put(nomeAtributo, tipo);
+            } catch (Exception ex) {
+                Logger.getLogger(GeradorCodigo.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    public static String gerarNomeClasse(Object object) {
+        String nomeAbs = object.getClass().getName();
+        int inicio = nomeAbs.lastIndexOf(".") + 1;
+        String nomeClasse = nomeAbs.substring(inicio).toLowerCase();
+        return nomeClasse;
+    }
     
     public GeradorDAO(Object object) {
-        GeradorCodigo.gerarCamposClasse(object);
-        atribudos = GeradorCodigo.att;
-        mapa = GeradorCodigo.map;
-        String tabela = GeradorCodigo.gerarNomeClasse(object);
+        gerarCamposClasse(object);
+        atribudos = att;
+        mapa = map;
+        String tabela = gerarNomeClasse(object);
         //gerarDAO(tabela);
         getDAO(tabela);
     }
@@ -182,7 +230,7 @@ public class GeradorDAO {
         
     }
     
-    private void getInsert(String tabela, String campos, String coringas) {
+    private String getInsert(String tabela, String campos, String coringas) {
         StringBuffer sb = new StringBuffer();
         String sqlInsert = "INSERT INTO %t(%c) VALUES (%v);";
         sb.append("public void insert(" + tabela.substring(0, 1).toUpperCase().concat(tabela.substring(1)) + " " + tabela + ") throws SQLException {");
@@ -200,10 +248,10 @@ public class GeradorDAO {
         
         sb.append("\n");
         
-        System.out.println(sb.toString());
+        return sb.toString();
     } 
     
-    private void getUpdate(String tabela, String upCampos, String id) {
+    private String getUpdate(String tabela, String upCampos, String id) {
         StringBuffer sb = new StringBuffer();
         String sqlUpdate = "UPDATE %t SET %uc WHERE %id;";
         sb.append("public void update(" + tabela.substring(0, 1).toUpperCase().concat(tabela.substring(1)) + " " + tabela + ") throws SQLException {");
@@ -222,10 +270,10 @@ public class GeradorDAO {
         sb.append("\n}");
 
         sb.append("\n");
-        System.out.println(sb.toString());
+        return sb.toString();
     }
     
-    private void getDelete(String tabela, String id) {
+    private String getDelete(String tabela, String id) {
         StringBuffer sb = new StringBuffer();
         String sqlDelete = "DELETE FROM %t WHERE %id;";
         sb.append("public void delete(int id) throws SQLException {");
@@ -239,10 +287,10 @@ public class GeradorDAO {
         sb.append("\n}");
 
         sb.append("\n");
-        System.out.println(sb.toString());
+        return sb.toString();
     }
     
-    public void getSelect(String tabela) {
+    public String getSelect(String tabela) {
         StringBuffer sb = new StringBuffer();
         String sqlSELECT = "SELECT * FROM %t;";
         sb.append("public List<" + tabela.substring(0, 1).toUpperCase().concat(tabela.substring(1)) + "> select() throws SQLException {");
@@ -264,10 +312,10 @@ public class GeradorDAO {
         sb.append("\n}");
 
         sb.append("\n");
-        System.out.println(sb.toString());
+        return sb.toString();
     }
     
-    public void getSelect(String tabela, String id) {
+    public String getSelect(String tabela, String id) {
         StringBuffer sb = new StringBuffer();
         String sqlSELECTONE = "SELECT * FROM %t WHERE %id;";
         sb.append("public " + tabela.substring(0, 1).toUpperCase().concat(tabela.substring(1)) + " selectOne(int id) throws SQLException {");
@@ -290,7 +338,7 @@ public class GeradorDAO {
         sb.append("\n}");
 
         sb.append("\n");
-        System.out.println(sb.toString());
+        return sb.toString();
     }
     
 }
